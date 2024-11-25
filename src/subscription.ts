@@ -1,3 +1,4 @@
+import { BlobRef, ComAtprotoSyncGetBlob } from '@atproto/api'
 import {
   OutputSchema as RepoEvent,
   isCommit,
@@ -20,12 +21,21 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
     const postsToDelete = ops.posts.deletes.map((del) => del.uri)
     const postsToCreate = ops.posts.creates
       .filter((create) => {
-        // only alf-related posts
-        if(create.record.embed === undefined) {
+        if(create.record.reply) {
           return false;
         }
-        console.log(JSON.stringify(create.record.embed, null, 2));
-        return true;
+        let blob = create.record.embed?.video;
+        if(blob && Object.hasOwn(blob, "size")) {
+          let isSmall: boolean = blob["size"] < 1_000_000;
+          //if(isSmall) {
+          //  const split = create.uri.split("/");
+          //  const url = `https://bsky.app/profile/${split[2]}/post/${split[split.length - 1]}`
+          //  console.log(url);
+          //  console.log(blob["size"]);
+          //}
+          return isSmall;
+        }
+        return false;
       })
       .map((create) => {
         // map alf-related posts to a db row
